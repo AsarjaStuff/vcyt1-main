@@ -7,7 +7,7 @@ app = Flask('')
 @app.route('/')
 def main():
     # Replace the URL below with any URL you want to redirect to.
-    return '<meta http-equiv="refresh" content="0; URL=https://phantom.is-a.dev/support"/>'
+    return '<meta http-equiv="refresh" content="0; URL=https://www.google.com"/>'
 
 def run():
     # Use the PORT environment variable if it's defined; otherwise, default to 8080.
