@@ -18,11 +18,13 @@ status = "online"  # online/dnd/idle
 chrome_options = Options()
 chrome_options.add_argument("--headless")  # Runs browser in background without opening a window
 chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration (optional)
+chrome_options.add_argument("--no-sandbox")  # Needed for some environments, including Render
+chrome_options.add_argument("--disable-dev-shm-usage")  # Required for Docker and cloud environments
 
-# Path to your chromedriver (update if needed)
-chromedriver_path = "/path/to/chromedriver"  # Change this to the correct path
+# Path to your chromedriver in the Render environment
+chromedriver_path = "/usr/bin/chromedriver"  # This should be the default location for Render's chromedriver
 
-# Check if chromedriver exists
+# Check if chromedriver exists (for debugging purposes)
 if not os.path.exists(chromedriver_path):
     print("[ERROR] Chromedriver not found at the specified path.")
     sys.exit()
