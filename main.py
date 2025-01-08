@@ -26,7 +26,7 @@ chrome_options.add_argument("--no-sandbox")  # Needed for some environments, inc
 chrome_options.add_argument("--disable-dev-shm-usage")  # Required for Docker and cloud environments
 
 # Path to chromedriver (update if needed)
-chromedriver_path = "C:\Users\Home\Downloads\vcyt1-main\chromedriver.exe"  # Update to your chromedriver path
+chromedriver_path = "C:/Users/Home/Downloads/vcyt1-main/chromedriver.exe" # Update to your chromedriver path
 driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
 
 # Log into Discord using the provided token
