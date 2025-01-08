@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import requests
-import subprocess
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -15,33 +14,6 @@ from keep_alive import keep_alive
 # Set up status for the bot (optional)
 status = "online"  # online/dnd/idle
 
-# Path to your chromedriver in the Render environment
-chromedriver_path = "/usr/bin/chromedriver"  # This should be the default location for Render's chromedriver
-
-# Function to download and set up chromedriver
-def install_chromedriver():
-    print("Downloading Chromedriver...")
-    chromedriver_url = "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip"  # Latest stable version
-    chromedriver_zip = "/tmp/chromedriver_linux64.zip"
-    
-    # Download chromedriver zip
-    subprocess.run(["wget", chromedriver_url, "-O", chromedriver_zip])
-    
-    # Unzip chromedriver
-    subprocess.run(["unzip", chromedriver_zip, "-d", "/usr/bin/"])
-    
-    # Remove the downloaded zip file
-    os.remove(chromedriver_zip)
-    
-    # Set execute permissions
-    subprocess.run(["chmod", "+x", "/usr/bin/chromedriver"])
-    print("Chromedriver installation complete.")
-
-# Check if chromedriver exists at the specified path
-if not os.path.exists(chromedriver_path):
-    print("[ERROR] Chromedriver not found at the specified path, installing it...")
-    install_chromedriver()
-
 # Set up WebDriver options
 chrome_options = Options()
 chrome_options.add_argument("--headless")  # Runs browser in background without opening a window
@@ -49,10 +21,26 @@ chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration (option
 chrome_options.add_argument("--no-sandbox")  # Needed for some environments, including Render
 chrome_options.add_argument("--disable-dev-shm-usage")  # Required for Docker and cloud environments
 
-# Start the WebDriver
+# Ensure chromedriver path is set correctly for Render environment
+chromedriver_path = "/usr/bin/chromedriver"  # Default path for Render
+
+# Check if chromedriver exists (for debugging purposes)
+if not os.path.exists(chromedriver_path):
+    print("[ERROR] Chromedriver not found at the specified path.")
+    # Let's attempt to download and install chromedriver dynamically for Render environment
+    try:
+        import subprocess
+        print("[INFO] Installing Chromedriver...")
+        subprocess.run(["apt-get", "update", "-y"], check=True)
+        subprocess.run(["apt-get", "install", "chromium-driver", "-y"], check=True)
+        print("[INFO] Chromedriver installation complete.")
+    except Exception as e:
+        print(f"[ERROR] Error installing Chromedriver: {e}")
+        sys.exit()
+
+# Start the WebDriver with the proper chromedriver path
 driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
 
-# Your token from environment
 usertoken = os.getenv("TOKEN")
 if not usertoken:
     print("[ERROR] Please add a token inside Secrets.")
