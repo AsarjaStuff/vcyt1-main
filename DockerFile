@@ -12,6 +12,9 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
     dpkg -i google-chrome-stable_current_amd64.deb && \
     apt-get install -f -y
 
+# Copy chromedriver into the correct location
+COPY chromedriver /opt/render/project/src/chromedriver
+
 # Make sure chromedriver has executable permissions
 RUN chmod +x /opt/render/project/src/chromedriver
 
@@ -31,3 +34,6 @@ WORKDIR /app
 
 # Run your Python application
 CMD ["python", "main.py"]
+
+# Debug: list permissions of chromedriver
+RUN ls -l /opt/render/project/src/chromedriver
