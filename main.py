@@ -13,12 +13,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 # Function to find the Chrome binary
 def find_chrome_binary():
-    # Set the path to where Chromium is typically installed in Docker environments
-    chrome_bin = '/usr/bin/chromium'  # This should be the default installation path for Chromium in Docker
+    chrome_bin = os.getenv('CHROME_BIN', '/usr/bin/chromium')  # Default to '/usr/bin/chromium' if not set
     if os.path.exists(chrome_bin):
         return chrome_bin
     else:
-        print("[ERROR] Chrome binary not found.")
+        print(f"[ERROR] Chrome binary not found at {chrome_bin}.")
         return None
 
 # Function to find the ChromeDriver path
