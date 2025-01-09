@@ -25,7 +25,11 @@ chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration (option
 chrome_options.add_argument("--no-sandbox")  # Needed for some environments, including Render
 chrome_options.add_argument("--disable-dev-shm-usage")  # Required for Docker and cloud environments
 
-chromedriver_path = "/opt/render/project/src/chromedriver" 
+# Path to chromedriver
+chromedriver_path = "/opt/render/project/src/chromedriver"
+
+# Ensure chromedriver is executable
+os.chmod(chromedriver_path, 0o755)
 
 driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
 
