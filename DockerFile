@@ -20,8 +20,9 @@ RUN apk update && \
 ENV CHROME_BIN=/usr/bin/chromium
 
 # Download and install ChromeDriver
-RUN curl -sS https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.264/linux64/chromedriver-linux64.zip -d /usr/local/bin/ && \
-    rm /chromedriver.zip
+RUN curl -sS https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.264/linux64/chromedriver-linux64.zip -o /tmp/chromedriver-linux64.zip && \
+    unzip /tmp/chromedriver-linux64.zip -d /usr/local/bin/ && \
+    rm /tmp/chromedriver-linux64.zip
 
 # Set the environment variable for ChromeDriver
 ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver

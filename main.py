@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import requests
-import shutil
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -11,7 +10,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
-import subprocess
 
 # Function to find the Chrome binary
 def find_chrome_binary():
@@ -25,7 +23,7 @@ def find_chrome_binary():
 
 # Function to find the ChromeDriver path
 def find_chromedriver():
-    chromedriver_path = ChromeDriverManager().install()
+    chromedriver_path = os.getenv('CHROMEDRIVER_PATH', ChromeDriverManager().install())
     return chromedriver_path
 
 # Fetch the user token and guild ID from environment variables
