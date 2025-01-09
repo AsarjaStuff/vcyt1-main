@@ -1,36 +1,64 @@
-FROM python:3.9-alpine
+# Use an official Python image as a base image
+FROM python:3.9-slim
 
-# Install dependencies for Chromium
-RUN apk update && \
-    apk add --no-cache \
-    bash \
+# Install necessary dependencies for Chrome
+RUN apt-get update && apt-get install -y \
+    wget \
     curl \
-    libx11 \
-    libxcomposite \
-    libxrandr \
-    libxi \
-    libxtst \
-    nss \
-    freetype \
-    harfbuzz \
-    ttf-freefont \
-    chromium
+    ca-certificates \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxi6 \
+    libxtst6 \
+    libnss3 \
+    libgdk-pixbuf2.0-0 \
+    libgtk-3-0 \
+    libxrandr2 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgdk-pixbuf2.0-0 \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libnspr4 \
+    libnss3 \
+    lsb-release \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set CHROME_BIN environment variable to point to the correct binary
-ENV CHROME_BIN=/usr/bin/chromium
+# Install Google Chrome
+RUN curl -sS https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome.deb \
+    && dpkg -i google-chrome.deb \
+    && apt-get update \
+    && apt-get install -f -y \
+    && rm google-chrome.deb
+
+# Install ChromeDriver
+RUN apt-get update && apt-get install -y \
+    unzip \
+    && wget https://chromedriver.storage.googleapis.com/115.0.5790.170/chromedriver_linux64.zip \
+    && unzip chromedriver_linux64.zip \
+    && mv chromedriver /usr/local/bin/ \
+    && chmod +x /usr/local/bin/chromedriver \
+    && rm chromedriver_linux64.zip
+
+# Set environment variable for Chrome binary
+ENV CHROME_BIN="/usr/bin/google-chrome-stable"
+
+# Set environment variable for ChromeDriver path
+ENV CHROMEDRIVER_PATH="/usr/local/bin/chromedriver"
 
 # Install Python dependencies
 COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt
+WORKDIR /app
+RUN pip install -r requirements.txt
 
-# Add the project files
+# Copy the project files into the container
 COPY . /app
 
-# Set the working directory
-WORKDIR /app
-
-# Expose port for Flask if running in web service mode
-EXPOSE 8080
-
-# Run your Python application
+# Run the Python script
 CMD ["python", "main.py"]

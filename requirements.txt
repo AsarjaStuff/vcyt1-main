@@ -1,4 +1,4 @@
-requests
+requests==2.28.0
 websocket-client
 Flask
 selenium==4.6.0
