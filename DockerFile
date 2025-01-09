@@ -12,6 +12,9 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
     dpkg -i google-chrome-stable_current_amd64.deb && \
     apt-get install -f -y
 
+# Check the Chrome installation path and set environment variable correctly
+RUN which google-chrome-stable
+
 # Copy chromedriver into the correct location
 COPY chromedriver /opt/render/project/src/chromedriver
 
