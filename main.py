@@ -11,33 +11,21 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
+import subprocess
 
-# Function to detect Chrome binary path
+# Function to detect Chrome binary path using 'which'
 def find_chrome_binary():
-    possible_paths = [
-        '/usr/bin/google-chrome-stable',  # Common path for Google Chrome
-        '/opt/google/chrome/stable',  # Another possible path
-        '/usr/bin/chromium',  # If you're using Chromium instead
-        '/usr/local/bin/google-chrome-stable',  # Another possible location
-        '/usr/bin/chrome',  # Additional possible location
-    ]
-    for path in possible_paths:
-        if shutil.which(path):  # Check if the binary exists in the path
-            return path
-    return None  # Return None if no path is found
+    try:
+        # Get the Chrome binary path using the which command
+        chrome_bin = subprocess.check_output(["which", "google-chrome-stable"]).decode("utf-8").strip()
+        return chrome_bin
+    except subprocess.CalledProcessError:
+        return None  # Return None if the command fails
 
-# Function to detect ChromeDriver path
+# Function to detect ChromeDriver path using ChromeDriverManager
 def find_chromedriver():
-    possible_paths = [
-        '/usr/local/bin/chromedriver',  # Standard installation location for ChromeDriver
-        '/opt/chromedriver',  # Another possible location
-        '/usr/bin/chromedriver',  # If installed in the bin directory
-        '/usr/lib/chromium-browser/chromedriver',  # If using Chromium on some distros
-    ]
-    for path in possible_paths:
-        if shutil.which(path):  # Check if ChromeDriver exists in the path
-            return path
-    return None  # Return None if no path is found
+    chromedriver_path = ChromeDriverManager().install()
+    return chromedriver_path
 
 # Get environment variables
 usertoken = os.getenv("TOKEN")
@@ -70,7 +58,7 @@ if not chrome_bin:
 chrome_options.binary_location = chrome_bin
 
 # Use ChromeDriverManager for downloading and managing the ChromeDriver
-chromedriver_path = ChromeDriverManager().install()
+chromedriver_path = find_chromedriver()
 
 # Debug: Log the binary location and ChromeDriver path being used
 print(f"Using Chrome binary located at: {chrome_bin}")
