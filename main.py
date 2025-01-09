@@ -25,12 +25,11 @@ chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration (option
 chrome_options.add_argument("--no-sandbox")  # Needed for some environments, including Render
 chrome_options.add_argument("--disable-dev-shm-usage")  # Required for Docker and cloud environments
 
-# Path to chromedriver
+# Use the correct chromedriver path and Chrome binary path
 chromedriver_path = "/opt/render/project/src/chromedriver"
+chrome_options.binary_location = "/usr/bin/google-chrome-stable"  # Path to the Chrome binary
 
-# Ensure chromedriver is executable
-os.chmod(chromedriver_path, 0o755)
-
+# Initialize the WebDriver
 driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
 
 # Log into Discord using the provided token

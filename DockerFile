@@ -1,0 +1,33 @@
+# Use a base image with Python
+FROM python:3.11-slim
+
+# Install dependencies for Chrome and chromedriver
+RUN apt-get update -y && \
+    apt-get install -y wget curl unzip ca-certificates \
+    libx11-dev libx264-dev libssl-dev libnss3-dev libgdk-pixbuf2.0-0 \
+    libxss1 libappindicator3-1 libasound2 libgtk-3-0
+
+# Download and install Google Chrome
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    dpkg -i google-chrome-stable_current_amd64.deb && \
+    apt-get install -f -y
+
+# Make sure chromedriver has executable permissions
+RUN chmod +x /opt/render/project/src/chromedriver
+
+# Set the environment variables for Chrome and ChromeDriver
+ENV CHROME_BIN=/usr/bin/google-chrome-stable
+ENV CHROMEDRIVER_PATH=/opt/render/project/src/chromedriver
+
+# Install your python dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
+
+# Add the project files
+COPY . /app
+
+# Set the working directory
+WORKDIR /app
+
+# Run your Python application
+CMD ["python", "main.py"]
