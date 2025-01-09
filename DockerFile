@@ -1,5 +1,6 @@
 FROM python:3.9-alpine
 
+# Install dependencies for Chromium and ChromeDriver
 RUN apk update && \
     apk add --no-cache \
     bash \
@@ -15,20 +16,26 @@ RUN apk update && \
     ttf-freefont \
     chromium
 
-ENV CHROME_BIN=/usr/bin/chromium-browser
+# Set CHROME_BIN environment variable to point to the correct binary
+ENV CHROME_BIN=/usr/bin/chromium
 
+# Download and install ChromeDriver
 RUN curl -sS https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.264/linux64/chromedriver-linux64.zip -o /chromedriver.zip && \
     unzip /chromedriver.zip -d /usr/local/bin/ && \
-    rm /chromedriver.zip && \
-    chmod +x /usr/local/bin/chromedriver
+    rm /chromedriver.zip
 
+# Set the environment variable for ChromeDriver
 ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 
+# Install Python dependencies
 COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
+# Add the project files
 COPY . /app
 
+# Set the working directory
 WORKDIR /app
 
+# Run your Python application
 CMD ["python", "main.py"]

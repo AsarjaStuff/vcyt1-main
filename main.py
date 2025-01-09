@@ -16,7 +16,8 @@ import subprocess
 # Function to find the Chrome binary
 def find_chrome_binary():
     try:
-        chrome_bin = subprocess.check_output(["/usr/bin/env", "chromium-browser"]).decode("utf-8").strip()
+        # Try using "chromium" instead of "chromium-browser"
+        chrome_bin = subprocess.check_output(["/usr/bin/env", "chromium"]).decode("utf-8").strip()
         return chrome_bin
     except subprocess.CalledProcessError:
         return None
