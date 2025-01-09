@@ -25,8 +25,8 @@ chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration (option
 chrome_options.add_argument("--no-sandbox")  # Needed for some environments, including Render
 chrome_options.add_argument("--disable-dev-shm-usage")  # Required for Docker and cloud environments
 
-# Path to chromedriver (update if needed)
-chromedriver_path = "C:\Users\Home\Downloads\vcyt1-main\chromedriver" # Update to your chromedriver path
+chromedriver_path = r"C:\Users\Home\Downloads\vcyt1-main\chromedriver"
+
 driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
 
 # Log into Discord using the provided token
