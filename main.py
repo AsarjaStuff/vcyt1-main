@@ -42,7 +42,7 @@ print(f"[DEBUG] Using WebDriver Manager to handle ChromeDriver.")
 # Initialize WebDriver with automatic driver management using WebDriver Manager
 try:
     # WebDriver Manager version 4.0.0 automatically handles the driver download and setup
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager(version="114.0.5735.90").install()), options=chrome_options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     print("[DEBUG] WebDriver initialized successfully.")
 except Exception as e:
     print(f"[ERROR] Failed to initialize WebDriver: {e}")
