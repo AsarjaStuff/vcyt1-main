@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import requests
+import shutil
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -10,6 +11,19 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
+
+# Function to detect Chrome binary path
+def find_chrome_binary():
+    possible_paths = [
+        '/usr/bin/google-chrome-stable',  # Common path in Docker/Render
+        '/opt/google/chrome/stable',  # Another possible path
+        '/usr/bin/chromium',  # If you're using Chromium instead
+        '/usr/local/bin/google-chrome-stable',  # Another possible location
+    ]
+    for path in possible_paths:
+        if shutil.which(path):  # Check if the binary exists in the path
+            return path
+    return None  # Return None if no path is found
 
 # Get environment variables
 usertoken = os.getenv("TOKEN")
@@ -33,8 +47,12 @@ chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
 chrome_options.add_argument("--no-sandbox")  # Necessary for some environments, including Render
 chrome_options.add_argument("--disable-dev-shm-usage")  # Necessary for Docker and cloud environments
 
-# Set the binary location for Chrome
-chrome_options.binary_location = os.getenv("CHROME_BIN", "/usr/bin/google-chrome-stable")  # Path to the Chrome binary
+# Automatically detect Chrome binary path
+chrome_bin = find_chrome_binary()
+if not chrome_bin:
+    print("[ERROR] Chrome binary not found.")
+    sys.exit()
+chrome_options.binary_location = chrome_bin
 
 # Initialize WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
