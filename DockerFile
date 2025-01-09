@@ -18,16 +18,16 @@ ENV CHROME_BIN=/usr/bin/google-chrome-stable
 # Check the Chrome installation path and set environment variable correctly
 RUN which google-chrome-stable
 
-# Copy chromedriver into the correct location
-COPY chromedriver /opt/render/project/src/chromedriver
+# Download and install ChromeDriver
+RUN wget -q https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip -O /tmp/chromedriver.zip && \
+    unzip /tmp/chromedriver.zip -d /opt/ && \
+    chmod +x /opt/chromedriver && \
+    rm /tmp/chromedriver.zip
 
-# Make sure chromedriver has executable permissions
-RUN chmod +x /opt/render/project/src/chromedriver
+# Set the environment variable for ChromeDriver path
+ENV CHROMEDRIVER_PATH=/opt/chromedriver
 
-# Set the environment variables for Chrome and ChromeDriver
-ENV CHROMEDRIVER_PATH=/opt/render/project/src/chromedriver
-
-# Install python dependencies
+# Install Python dependencies
 COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
@@ -41,4 +41,4 @@ WORKDIR /app
 CMD ["python", "main.py"]
 
 # Debug: list permissions of chromedriver
-RUN ls -l /opt/render/project/src/chromedriver
+RUN ls -l /opt/chromedriver

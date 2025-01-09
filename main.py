@@ -15,7 +15,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Function to detect Chrome binary path
 def find_chrome_binary():
     possible_paths = [
-        '/usr/bin/google-chrome-stable',  # Common path in Docker/Render
+        '/usr/bin/google-chrome-stable',  # Common path for Google Chrome
         '/opt/google/chrome/stable',  # Another possible path
         '/usr/bin/chromium',  # If you're using Chromium instead
         '/usr/local/bin/google-chrome-stable',  # Another possible location
@@ -23,6 +23,19 @@ def find_chrome_binary():
     ]
     for path in possible_paths:
         if shutil.which(path):  # Check if the binary exists in the path
+            return path
+    return None  # Return None if no path is found
+
+# Function to detect ChromeDriver path
+def find_chromedriver():
+    possible_paths = [
+        '/usr/local/bin/chromedriver',  # Standard installation location for ChromeDriver
+        '/opt/chromedriver',  # Another possible location
+        '/usr/bin/chromedriver',  # If installed in the bin directory
+        '/usr/lib/chromium-browser/chromedriver',  # If using Chromium on some distros
+    ]
+    for path in possible_paths:
+        if shutil.which(path):  # Check if ChromeDriver exists in the path
             return path
     return None  # Return None if no path is found
 
@@ -55,11 +68,18 @@ if not chrome_bin:
     sys.exit()
 chrome_options.binary_location = chrome_bin
 
-# Debug: Log the binary location being used
+# Automatically detect ChromeDriver path
+chromedriver_path = find_chromedriver()
+if not chromedriver_path:
+    print("[ERROR] ChromeDriver not found.")
+    sys.exit()
+
+# Debug: Log the binary location and ChromeDriver path being used
 print(f"Using Chrome binary located at: {chrome_bin}")
+print(f"Using ChromeDriver located at: {chromedriver_path}")
 
 # Initialize WebDriver
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
 
 # Log into Discord using the provided token
 driver.get("https://discord.com/login")
