@@ -1,5 +1,5 @@
 # Use a base image with Python
-FROM python:3.11-slim
+FROM python:slim
 
 # Install dependencies for Chrome and chromedriver
 RUN apt-get update -y && \
@@ -22,7 +22,7 @@ RUN chmod +x /opt/render/project/src/chromedriver
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
 ENV CHROMEDRIVER_PATH=/opt/render/project/src/chromedriver
 
-# Install your python dependencies
+# Install python dependencies
 COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
