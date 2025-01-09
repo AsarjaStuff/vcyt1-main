@@ -9,129 +9,107 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from webdriver_manager.chrome import ChromeDriverManager
 
-# Function to find the Chrome binary
-def find_chrome_binary():
-    chrome_bin = os.getenv('CHROME_BIN', '/usr/bin/chromium')  # Default to '/usr/bin/chromium' if not set
-    if os.path.exists(chrome_bin):
-        return chrome_bin
-    else:
-        print(f"[ERROR] Chrome binary not found at {chrome_bin}.")
-        return None
-
-# Function to find the ChromeDriver path
-def find_chromedriver():
-    chromedriver_path = os.getenv('CHROMEDRIVER_PATH', ChromeDriverManager().install())
-    return chromedriver_path
-
-# Fetch the user token and guild ID from environment variables
+# Fetch and validate environment variables
 usertoken = os.getenv("TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
+CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/chromium")
+CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
+
+print("[DEBUG] Starting the script...")
 
 if not usertoken or not GUILD_ID:
-    print("[ERROR] Please add a token and guild ID inside the environment variables.")
+    print("[ERROR] Missing TOKEN or GUILD_ID in environment variables.")
     sys.exit()
 
-# Validate the provided token with the Discord API
+# Validate token
 headers = {"Authorization": usertoken}
-validate = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
-if validate.status_code != 200:
-    print("[ERROR] Invalid token. Please check it again.")
+response = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
+print(f"[DEBUG] Token validation response: {response.status_code} - {response.text}")
+if response.status_code != 200:
+    print(f"[ERROR] Invalid token: {response.status_code} - {response.text}")
     sys.exit()
 
-# Set up Chrome options for headless mode
+# Set up Chrome options
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--remote-debugging-port=9222")
+chrome_options.binary_location = CHROME_BIN
 
-# Find the Chrome binary and assign it to the options
-chrome_bin = find_chrome_binary()
-if not chrome_bin:
-    print("[ERROR] Chrome binary not found.")
+# Print paths for debugging
+print(f"[DEBUG] Using Chrome binary located at: {CHROME_BIN}")
+print(f"[DEBUG] Using ChromeDriver located at: {CHROMEDRIVER_PATH}")
+
+# Initialize WebDriver
+try:
+    driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
+    print("[DEBUG] WebDriver initialized successfully.")
+except Exception as e:
+    print(f"[ERROR] Failed to initialize WebDriver: {e}")
     sys.exit()
-chrome_options.binary_location = chrome_bin
 
-# Get the ChromeDriver path
-chromedriver_path = find_chromedriver()
+try:
+    # Log into Discord using token
+    driver.get("https://discord.com/login")
+    print("[DEBUG] Navigated to Discord login page.")
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "email")))
+    driver.execute_script(f"localStorage.setItem('token', '{usertoken}')")
+    driver.refresh()
+    print("[DEBUG] Token set in localStorage and page refreshed.")
 
-# Print out the paths being used for debugging
-print(f"Using Chrome binary located at: {chrome_bin}")
-print(f"Using ChromeDriver located at: {chromedriver_path}")
+    # Navigate to the specified guild
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "guilds")))
+    driver.get(f"https://discord.com/channels/{GUILD_ID}/{GUILD_ID}")
+    print(f"[DEBUG] Navigated to guild page: {GUILD_ID}")
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "guild-header")))
 
-# Set up the WebDriver and start the browser session
-driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
+    while True:
+        try:
+            # Click Server Settings
+            settings_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Server Settings']"))
+            )
+            settings_button.click()
+            print("[DEBUG] Server Settings button clicked.")
 
-# Navigate to the Discord login page
-driver.get("https://discord.com/login")
-WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.NAME, "email"))
-)
+            # Click Guild Settings
+            guild_settings_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//div[@aria-label='Guild Settings']"))
+            )
+            guild_settings_button.click()
+            print("[DEBUG] Guild Settings button clicked.")
 
-# Set the token in localStorage and refresh the page to log in
-driver.execute_script(f"localStorage.setItem('token', '{usertoken}')")
-driver.refresh()
+            # Click Guild Badge and Randomize
+            guild_badge_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[text()='Guild Badge']"))
+            )
+            guild_badge_button.click()
+            print("[DEBUG] Guild Badge button clicked.")
 
-# Wait until the guilds section is loaded after logging in
-WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.CLASS_NAME, "guilds"))
-)
+            randomize_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.NAME, "randomize"))
+            )
+            randomize_button.click()
+            print("[DEBUG] Randomize button clicked successfully.")
 
-# Navigate to the specified guild page
-driver.get(f"https://discord.com/channels/{GUILD_ID}/{GUILD_ID}")
+            # Save changes
+            save_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[text()='Save Changes']"))
+            )
+            save_button.click()
+            print("[DEBUG] Changes saved successfully.")
 
-# Wait until the guild header is loaded
-WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.CLASS_NAME, "guild-header"))
-)
+            time.sleep(10)
 
-# Start interacting with the Discord server settings
-while True:
-    try:
-        # Click the "Server Settings" button
-        settings_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Server Settings']"))
-        )
-        settings_button.click()
+        except (NoSuchElementException, TimeoutException) as e:
+            print(f"[ERROR] Element not found or timeout: {e}")
+            break
+        except Exception as e:
+            print(f"[ERROR] Unexpected error: {e}")
+            break
 
-        # Click the "Guild Settings" option
-        guild_settings_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//div[@aria-label='Guild Settings']"))
-        )
-        guild_settings_button.click()
-
-        # Click the "Guild Badge" button
-        guild_badge_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[text()='Guild Badge']"))
-        )
-        guild_badge_button.click()
-
-        # Click the "Randomize" button
-        randomize_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.NAME, "randomize"))
-        )
-        randomize_button.click()
-        print("Randomize button clicked successfully!")
-
-        # Save the changes
-        save_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[text()='Save Changes']"))
-        )
-        save_button.click()
-        print("Changes saved successfully!")
-
-        # Wait before repeating the process
-        time.sleep(10)
-
-    except (NoSuchElementException, TimeoutException) as e:
-        print(f"Error: {e} - Element not found or timeout occurred.")
-        break
-    except Exception as e:
-        print(f"Unexpected error occurred: {e}")
-        break
-
-# Close the browser when done
-driver.quit()
+finally:
+    print("[DEBUG] Quitting the WebDriver.")
+    driver.quit()
