@@ -1,7 +1,7 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# Set environment variables for chrome
+# Set environment variables for Chrome binary and driver
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
 ENV CHROME_DRIVER=/usr/local/bin/chromedriver
 
@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -f -y \
     && rm google-chrome.deb
 
-# Install chromedriver
+# Install Chromedriver
 RUN LATEST_CHROMEDRIVER=$(curl -sSL https://chromedriver.storage.googleapis.com/LATEST_RELEASE) \
     && wget https://chromedriver.storage.googleapis.com/${LATEST_CHROMEDRIVER}/chromedriver_linux64.zip -O chromedriver.zip \
     && unzip chromedriver.zip -d /usr/local/bin/ \
