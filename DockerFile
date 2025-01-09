@@ -1,7 +1,7 @@
 # Use a base image with Python
 FROM python:slim
 
-# Install dependencies for Chrome and chromedriver
+# Install dependencies for Chrome and ChromeDriver
 RUN apt-get update -y && \
     apt-get install -y wget curl unzip ca-certificates \
     libx11-dev libx264-dev libssl-dev libnss3-dev libgdk-pixbuf2.0-0 \
@@ -15,17 +15,13 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 # Set the environment variable for Chrome binary path
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
 
-# Check the Chrome installation path and set environment variable correctly
-RUN which google-chrome-stable
+# Install ChromeDriver using WebDriverManager or manual copy
+RUN wget -q https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip -O /chromedriver.zip && \
+    unzip /chromedriver.zip -d /usr/local/bin/ && \
+    rm /chromedriver.zip
 
-# Download and install ChromeDriver
-RUN wget -q https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip -O /tmp/chromedriver.zip && \
-    unzip /tmp/chromedriver.zip -d /opt/ && \
-    chmod +x /opt/chromedriver && \
-    rm /tmp/chromedriver.zip
-
-# Set the environment variable for ChromeDriver path
-ENV CHROMEDRIVER_PATH=/opt/chromedriver
+# Set the environment variable for ChromeDriver
+ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 
 # Install Python dependencies
 COPY requirements.txt /app/requirements.txt
@@ -39,6 +35,3 @@ WORKDIR /app
 
 # Run your Python application
 CMD ["python", "main.py"]
-
-# Debug: list permissions of chromedriver
-RUN ls -l /opt/chromedriver

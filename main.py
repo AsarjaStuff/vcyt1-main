@@ -58,8 +58,9 @@ if validate.status_code != 200:
 chrome_options = Options()
 chrome_options.add_argument("--headless")  # Runs browser in background without opening a window
 chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
-chrome_options.add_argument("--no-sandbox")  # Necessary for some environments, including Render
+chrome_options.add_argument("--no-sandbox")  # Necessary for some environments, including Docker/Render
 chrome_options.add_argument("--disable-dev-shm-usage")  # Necessary for Docker and cloud environments
+chrome_options.add_argument("--remote-debugging-port=9222")  # Useful for debugging headless chrome
 
 # Automatically detect Chrome binary path
 chrome_bin = find_chrome_binary()
@@ -68,11 +69,8 @@ if not chrome_bin:
     sys.exit()
 chrome_options.binary_location = chrome_bin
 
-# Automatically detect ChromeDriver path
-chromedriver_path = find_chromedriver()
-if not chromedriver_path:
-    print("[ERROR] ChromeDriver not found.")
-    sys.exit()
+# Use ChromeDriverManager for downloading and managing the ChromeDriver
+chromedriver_path = ChromeDriverManager().install()
 
 # Debug: Log the binary location and ChromeDriver path being used
 print(f"Using Chrome binary located at: {chrome_bin}")
