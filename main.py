@@ -19,6 +19,7 @@ def find_chrome_binary():
         '/opt/google/chrome/stable',  # Another possible path
         '/usr/bin/chromium',  # If you're using Chromium instead
         '/usr/local/bin/google-chrome-stable',  # Another possible location
+        '/usr/bin/chrome',  # Additional possible location
     ]
     for path in possible_paths:
         if shutil.which(path):  # Check if the binary exists in the path
