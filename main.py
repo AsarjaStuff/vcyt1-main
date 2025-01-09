@@ -9,12 +9,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from webdriver_manager.chrome import ChromeDriverManager  # Import webdriver-manager
 
 # Fetch and validate environment variables
 usertoken = os.getenv("TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
 CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/chromium")
-CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
 
 print("[DEBUG] Starting the script...")
 
@@ -40,11 +40,10 @@ chrome_options.binary_location = CHROME_BIN
 
 # Print paths for debugging
 print(f"[DEBUG] Using Chrome binary located at: {CHROME_BIN}")
-print(f"[DEBUG] Using ChromeDriver located at: {CHROMEDRIVER_PATH}")
 
-# Initialize WebDriver
+# Initialize WebDriver using webdriver-manager to automatically get the right version of chromedriver
 try:
-    driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     print("[DEBUG] WebDriver initialized successfully.")
 except Exception as e:
     print(f"[ERROR] Failed to initialize WebDriver: {e}")
@@ -55,12 +54,15 @@ try:
     driver.get("https://discord.com/login")
     print("[DEBUG] Navigated to Discord login page.")
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "email")))
+
+    # Inject token into localStorage
     driver.execute_script(f"localStorage.setItem('token', '{usertoken}')")
     driver.refresh()
     print("[DEBUG] Token set in localStorage and page refreshed.")
 
     # Navigate to the specified guild
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "guilds")))
+
     driver.get(f"https://discord.com/channels/{GUILD_ID}/{GUILD_ID}")
     print(f"[DEBUG] Navigated to guild page: {GUILD_ID}")
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "guild-header")))
