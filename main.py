@@ -15,12 +15,16 @@ import subprocess
 
 # Function to find the Chrome binary
 def find_chrome_binary():
-    try:
-        # Try using "chromium" instead of "chromium-browser"
-        chrome_bin = subprocess.check_output(["/usr/bin/env", "chromium"]).decode("utf-8").strip()
-        return chrome_bin
-    except subprocess.CalledProcessError:
-        return None
+    # Check multiple possible paths for the Chromium or Chrome binary
+    possible_paths = [
+        "/usr/bin/chromium",  # Chromium's default path
+        "/usr/bin/google-chrome",  # Google Chrome's path
+        "/usr/bin/chrome"  # Another common path for Chrome
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    return None
 
 # Function to find the ChromeDriver path
 def find_chromedriver():

@@ -20,8 +20,7 @@ RUN apk update && \
 ENV CHROME_BIN=/usr/bin/chromium
 
 # Download and install ChromeDriver
-RUN curl -sS https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.264/linux64/chromedriver-linux64.zip -o /chromedriver.zip && \
-    unzip /chromedriver.zip -d /usr/local/bin/ && \
+RUN curl -sS https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.264/linux64/chromedriver-linux64.zip -d /usr/local/bin/ && \
     rm /chromedriver.zip
 
 # Set the environment variable for ChromeDriver
@@ -36,6 +35,9 @@ COPY . /app
 
 # Set the working directory
 WORKDIR /app
+
+# Expose port for Flask if running in web service mode
+EXPOSE 8080
 
 # Run your Python application
 CMD ["python", "main.py"]
