@@ -14,7 +14,9 @@ RUN apk update && \
     freetype \
     harfbuzz \
     ttf-freefont \
-    chromium
+    chromium && \
+    # Debug: Check where chromium is installed
+    which chromium
 
 # Set CHROME_BIN environment variable to point to the correct binary
 ENV CHROME_BIN=/usr/bin/chromium
