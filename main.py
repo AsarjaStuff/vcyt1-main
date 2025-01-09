@@ -15,16 +15,13 @@ import subprocess
 
 # Function to find the Chrome binary
 def find_chrome_binary():
-    # Check multiple possible paths for the Chromium or Chrome binary
-    possible_paths = [
-        "/usr/bin/chromium",  # Chromium's default path
-        "/usr/bin/google-chrome",  # Google Chrome's path
-        "/usr/bin/chrome"  # Another common path for Chrome
-    ]
-    for path in possible_paths:
-        if os.path.exists(path):
-            return path
-    return None
+    # Set the path to where Chromium is typically installed in Docker environments
+    chrome_bin = '/usr/bin/chromium'  # This should be the default installation path for Chromium in Docker
+    if os.path.exists(chrome_bin):
+        return chrome_bin
+    else:
+        print("[ERROR] Chrome binary not found.")
+        return None
 
 # Function to find the ChromeDriver path
 def find_chromedriver():
