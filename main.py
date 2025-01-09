@@ -9,12 +9,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from webdriver_manager.chrome import ChromeDriverManager  # Importing WebDriver Manager
 
 # Fetch and validate environment variables
 usertoken = os.getenv("TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
-CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/chromium")
-CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
+CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/chromium")  # Not used by webdriver-manager
 
 print("[DEBUG] Starting the script...")
 
@@ -36,15 +36,15 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.binary_location = CHROME_BIN
+chrome_options.binary_location = CHROME_BIN  # Not necessary when using WebDriver Manager
 
 # Print paths for debugging
 print(f"[DEBUG] Using Chrome binary located at: {CHROME_BIN}")
-print(f"[DEBUG] Using ChromeDriver located at: {CHROMEDRIVER_PATH}")
 
-# Initialize WebDriver with automatic driver management from Selenium Manager
+# Initialize WebDriver with automatic driver management using WebDriver Manager
 try:
-    driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
+    # WebDriver Manager automatically handles the driver download and setup
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     print("[DEBUG] WebDriver initialized successfully.")
 except Exception as e:
     print(f"[ERROR] Failed to initialize WebDriver: {e}")
