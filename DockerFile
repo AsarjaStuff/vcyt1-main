@@ -12,6 +12,9 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
     dpkg -i google-chrome-stable_current_amd64.deb && \
     apt-get install -f -y
 
+# Set the environment variable for Chrome binary path
+ENV CHROME_BIN=/usr/bin/google-chrome-stable
+
 # Check the Chrome installation path and set environment variable correctly
 RUN which google-chrome-stable
 
@@ -22,7 +25,6 @@ COPY chromedriver /opt/render/project/src/chromedriver
 RUN chmod +x /opt/render/project/src/chromedriver
 
 # Set the environment variables for Chrome and ChromeDriver
-ENV CHROME_BIN=/usr/bin/google-chrome-stable
 ENV CHROMEDRIVER_PATH=/opt/render/project/src/chromedriver
 
 # Install python dependencies
