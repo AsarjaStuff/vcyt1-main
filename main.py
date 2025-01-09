@@ -14,6 +14,7 @@ from webdriver_manager.chrome import ChromeDriverManager  # Importing WebDriver 
 # Fetch and validate environment variables
 usertoken = os.getenv("TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
+CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/google-chrome-stable")  # Explicitly set the Chrome binary path
 
 print("[DEBUG] Starting the script...")
 
@@ -35,9 +36,10 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.binary_location = CHROME_BIN  # Make sure this points to the correct Chrome binary
 
 # Print paths for debugging
-print(f"[DEBUG] Using WebDriver Manager to handle ChromeDriver.")
+print(f"[DEBUG] Using Chrome binary located at: {CHROME_BIN}")
 
 # Initialize WebDriver with automatic driver management using WebDriver Manager
 try:
