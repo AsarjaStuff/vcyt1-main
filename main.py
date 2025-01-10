@@ -3,19 +3,19 @@ import sys
 import time
 import requests
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from webdriver_manager.chrome import ChromeDriverManager  # Importing WebDriver Manager
+from webdriver_manager.chrome import ChromeDriverManager  # WebDriver Manager for local Chrome
 
 # Fetch and validate environment variables
 usertoken = os.getenv("TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
-CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/google-chrome-stable")  # Explicitly set the Chrome binary path
+CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/google-chrome-stable")  # Explicitly set Chrome binary path
 
+# Check if environment variables are set
 print("[DEBUG] Starting the script...")
 
 if not usertoken or not GUILD_ID:
@@ -31,24 +31,27 @@ if response.status_code != 200:
     sys.exit()
 
 # Set up Chrome options
-chrome_options = Options()
+chrome_options = ChromeOptions()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.binary_location = CHROME_BIN  # Make sure this points to the correct Chrome binary
+chrome_options.binary_location = CHROME_BIN  # Ensure this points to the correct Chrome binary
 
-# Print paths for debugging
-print(f"[DEBUG] Using Chrome binary located at: {CHROME_BIN}")
+# Setup Sauce Labs capabilities
+sauce_options = {
+    'username': os.getenv('SAUCE_USERNAME'),  # Sauce Labs Username from environment
+    'accessKey': os.getenv('SAUCE_ACCESS_KEY'),  # Sauce Labs Access Key from environment
+    'build': 'selenium-build-2TRBC',  # Example build ID, can be customized
+    'name': 'Discord Automation Test'  # Custom name for the test
+}
 
-# Initialize WebDriver with automatic driver management using WebDriver Manager
-try:
-    # WebDriver Manager version 4.0.0 automatically handles the driver download and setup
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    print("[DEBUG] WebDriver initialized successfully.")
-except Exception as e:
-    print(f"[ERROR] Failed to initialize WebDriver: {e}")
-    sys.exit()
+chrome_options.set_capability('sauce:options', sauce_options)
+
+# Start remote WebDriver with Sauce Labs
+remote_url = "https://ondemand.eu-central-1.saucelabs.com:443/wd/hub"
+driver = webdriver.Remote(command_executor=remote_url, options=chrome_options)
+print("[DEBUG] WebDriver initialized with Sauce Labs.")
 
 try:
     # Log into Discord using token
