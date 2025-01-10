@@ -39,12 +39,13 @@ chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.binary_location = CHROME_BIN  # Ensure this points to the correct Chrome binary
 
-# Setup Sauce Labs capabilities
+# Setup Sauce Labs capabilities with extended debugging enabled
 sauce_options = {
     'username': os.getenv('SAUCE_USERNAME'),  # Sauce Labs Username from environment
     'accessKey': os.getenv('SAUCE_ACCESS_KEY'),  # Sauce Labs Access Key from environment
     'build': 'selenium-build-2TRBC',  # Example build ID, can be customized
-    'name': 'Discord Automation Test'  # Custom name for the test
+    'name': 'Discord Automation Test',  # Custom name for the test
+    'extendedDebugging': True  # Enable extended debugging to capture logs and HAR files
 }
 
 chrome_options.set_capability('sauce:options', sauce_options)
@@ -117,5 +118,10 @@ try:
             break
 
 finally:
+    # Fetch and print network logs
+    driver.execute_script('sauce:log', { 'type': 'sauce:network' })
+    print("[DEBUG] Network logs captured.")
+    
+    # Quit the WebDriver
     print("[DEBUG] Quitting the WebDriver.")
     driver.quit()
