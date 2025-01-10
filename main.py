@@ -32,7 +32,8 @@ if response.status_code != 200:
 
 # Set up Chrome options
 chrome_options = ChromeOptions()
-chrome_options.add_argument("--headless")
+# Removed headless mode
+# chrome_options.add_argument("--headless")  # No longer in use
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
