@@ -2,30 +2,26 @@ FROM python:3.9-slim
 
 # Set environment variables for Chrome binary and driver
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
-ENV CHROME_DRIVER=/usr/local/bin/chromedriver
 ENV SAUCE_USERNAME=oauth-kasanwidjojojeiel-30890
 ENV SAUCE_ACCESS_KEY=da6c39f1-bc81-4e03-ba16-b617ff0cc79f
 
 # Install dependencies and Google Chrome
-RUN apt-get update && apt-get install -y wget \
+RUN apt-get update && apt-get install -y wget curl unzip \
     && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt install -y ./google-chrome-stable_current_amd64.deb
 
 # Install Chromedriver
-RUN LATEST_CHROMEDRIVER=$(curl -sSL https://chromedriver.storage.googleapis.com/LATEST_RELEASE) \
-    && wget https://chromedriver.storage.googleapis.com/${LATEST_CHROMEDRIVER}/chromedriver_linux64.zip -O chromedriver.zip \
-    && unzip chromedriver.zip -d /usr/local/bin/ \
-    && rm chromedriver.zip
+RUN CHROME_DRIVER_VERSION=$(curl -sSL https://chromedriver.storage.googleapis.com/LATEST_RELEASE) \
+    && wget https://chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}/chromedriver_linux64.zip \
+    && unzip chromedriver_linux64.zip -d /usr/local/bin/ \
+    && rm chromedriver_linux64.zip
 
 # Install Python dependencies
 COPY requirements.txt . 
 RUN pip install -r requirements.txt
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
+COPY . .
 
-# Copy the code into the container
-COPY . . 
-
-# Run the script
 CMD ["python", "main.py"]
