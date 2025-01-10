@@ -102,4 +102,4 @@ finally:
     print("[DEBUG] Fetching network logs.")
     driver.execute_script('sauce:log', {'type': 'sauce:network'})
     print("[DEBUG] Quitting the WebDriver.")
-    driver.quit()
+    driver.quit(
