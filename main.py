@@ -55,6 +55,7 @@ chrome_options.set_capability('sauce:options', sauce_options)
 # Retry logic to manage CCYAbuse errors
 retries = 3
 for attempt in range(retries):
+    driver = None  # Initialize driver to None to avoid NameError
     try:
         # Remote WebDriver for Sauce Labs
         remote_url = "https://ondemand.eu-central-1.saucelabs.com:443/wd/hub"
@@ -113,6 +114,6 @@ for attempt in range(retries):
         else:
             print("[ERROR] Max retries reached. Exiting.")
     finally:
-        print("[DEBUG] Quitting the WebDriver.")
-        driver.quit()
-        break
+        if driver:
+            print("[DEBUG] Quitting the WebDriver.")
+            driver.quit()
