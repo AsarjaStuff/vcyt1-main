@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
-from webdriver_manager.chrome import ChromeDriverManager  # WebDriver Manager for local Chrome
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Fetch and validate environment variables
 usertoken = os.getenv("TOKEN")
@@ -65,13 +65,17 @@ for attempt in range(retries):
         driver.get("https://discord.com/login")
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "email")))
 
+        # Inject token, simulate refresh, and ensure login is successful
         driver.execute_script(f"localStorage.setItem('token', '{usertoken}')")
-        driver.refresh()
+        driver.execute_script("window.location.reload();")  # Refresh after token injection
 
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "guilds")))
+        WebDriverWait(driver, 15).until(EC.url_contains("discord.com/channels"))
+        print("[DEBUG] Successfully logged in using token.")
+
         driver.get(f"https://discord.com/channels/{GUILD_ID}/{GUILD_ID}")
         print(f"[DEBUG] Navigated to guild page: {GUILD_ID}")
 
+        # Simulate an interaction with the page
         while True:
             try:
                 settings_button = WebDriverWait(driver, 10).until(
@@ -105,7 +109,7 @@ for attempt in range(retries):
         print(f"[ERROR] WebDriverException encountered: {e}")
         if attempt < retries - 1:
             print("[INFO] Retrying after a delay...")
-            time.sleep(60)  # Wait 60 seconds before retrying
+            time.sleep(60)
         else:
             print("[ERROR] Max retries reached. Exiting.")
     finally:
