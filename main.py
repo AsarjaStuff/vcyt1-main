@@ -52,12 +52,13 @@ sauce_options = {
 }
 chrome_options.set_capability('sauce:options', sauce_options)
 
-# Retry logic to manage CCYAbuse errors
+# Use Sauce Labs tunnel with WebDriver for remote execution
+driver = None  # Initialize outside loop to avoid NameError
 retries = 3
+
 for attempt in range(retries):
-    driver = None  # Initialize driver to None to avoid NameError
     try:
-        # Remote WebDriver for Sauce Labs
+        # Remote WebDriver for Sauce Labs with Tunnel
         remote_url = "https://ondemand.eu-central-1.saucelabs.com:443/wd/hub"
         driver = webdriver.Remote(command_executor=remote_url, options=chrome_options)
         print("[DEBUG] WebDriver initialized with Sauce Labs using Sauce Connect.")
