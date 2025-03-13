@@ -1,120 +1,173 @@
+import discord
+from discord.ext import commands, tasks
+from discord import app_commands
+from pymongo import MongoClient
+from datetime import datetime, timezone, timedelta
+import logging
+from discord.ui import View, Select
 import os
-import sys
-import time
-import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
-from webdriver_manager.chrome import ChromeDriverManager
+from dotenv import load_dotenv
 
-# Fetch and validate environment variables
-usertoken = os.getenv("TOKEN")
-GUILD_ID = os.getenv("GUILD_ID")
-CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/google-chrome-stable")
+# Load environment variables
+load_dotenv()
 
-# Sauce Labs credentials and tunnel
-sauce_username = os.getenv('SAUCE_USERNAME', 'oauth-kasanwidjojojeiel-30890')
-sauce_access_key = os.getenv('SAUCE_ACCESS_KEY', 'da6c39f1-bc81-4e03-ba16-b617ff0cc79f')
-tunnel_name = 'oauth-kasanwidjojojeiel-30890_tunnel_name'
+# Retrieve sensitive info from environment variables
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+MONGO_URI = os.getenv("MONGO_URI")
 
-# Check for required environment variables
-print("[DEBUG] Starting the script...")
-if not usertoken or not GUILD_ID:
-    print("[ERROR] Missing TOKEN or GUILD_ID in environment variables.")
-    sys.exit()
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
-# Validate token
-headers = {"Authorization": usertoken}
-response = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
-print(f"[DEBUG] Token validation response: {response.status_code} - {response.text}")
-if response.status_code != 200:
-    print(f"[ERROR] Invalid token: {response.status_code} - {response.text}")
-    sys.exit()
+intents = discord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Set up Chrome options
-chrome_options = ChromeOptions()
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.binary_location = CHROME_BIN
+def sync_commands():
+    @bot.event
+    async def on_ready():
+        await bot.tree.sync()
+        print(f"Bot connected as {bot.user}")
+        auto_kick_task.start()
 
-# Sauce Labs capabilities with tunnel
-sauce_options = {
-    'username': sauce_username,
-    'accessKey': sauce_access_key,
-    'tunnelIdentifier': tunnel_name,
-    'build': 'selenium-build-2TRBC',
-    'name': 'Discord Automation Test',
-    'extendedDebugging': True
-}
-chrome_options.set_capability('sauce:options', sauce_options)
+# MongoDB Setup
+client = MongoClient(MONGO_URI)
+db = client["discord_bot"]
+guild_settings_collection = db["guild_settings"]  # To store guild-specific settings
+whitelist_collection = db["whitelist"]  # To store whitelisted users
 
-# Use Sauce Labs tunnel with WebDriver for remote execution
-driver = None  # Initialize outside loop to avoid NameError
-retries = 3
+# Function to check if user is an admin
+async def is_admin(interaction: discord.Interaction):
+    return interaction.user.guild_permissions.administrator
 
-for attempt in range(retries):
-    try:
-        # Remote WebDriver for Sauce Labs with Tunnel
-        remote_url = "https://ondemand.eu-central-1.saucelabs.com:443/wd/hub"
-        driver = webdriver.Remote(command_executor=remote_url, options=chrome_options)
-        print("[DEBUG] WebDriver initialized with Sauce Labs using Sauce Connect.")
+# Command to set the account age limit for auto-kick
+@bot.tree.command(name="setaccountagelimit", description="Set the account age limit for auto-kick.")
+async def set_account_age_limit(interaction: discord.Interaction, age_limit: int):
+    if not await is_admin(interaction):
+        await interaction.response.send_message("You need administrator permissions to use this command.", ephemeral=True)
+        return
 
-        # Log into Discord using token
-        driver.get("https://discord.com/login")
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "email")))
+    if age_limit <= 0:
+        await interaction.response.send_message("Age limit must be greater than 0 days.", ephemeral=True)
+        return
+    
+    guild_id = interaction.guild.id
+    guild_settings = guild_settings_collection.find_one({"guild_id": guild_id})
 
-        # Inject token, simulate refresh, and ensure login is successful
-        driver.execute_script(f"localStorage.setItem('token', '{usertoken}')")
-        driver.execute_script("window.location.reload();")  # Refresh after token injection
+    if guild_settings is None:
+        guild_settings_collection.insert_one({"guild_id": guild_id, "account_age_limit": age_limit, "autokick_enabled": True})
+    else:
+        guild_settings_collection.update_one({"guild_id": guild_id}, {"$set": {"account_age_limit": age_limit}})
+    
+    await interaction.response.send_message(f"Account age limit for auto-kick set to {age_limit} days.", ephemeral=True)
 
-        WebDriverWait(driver, 15).until(EC.url_contains("discord.com/channels"))
-        print("[DEBUG] Successfully logged in using token.")
+# Command to add a user to the whitelist
+@bot.tree.command(name="whitelist", description="Add a user to the whitelist to bypass age limit kick.")
+async def whitelist(interaction: discord.Interaction, user: discord.User):
+    if not await is_admin(interaction):
+        await interaction.response.send_message("You need administrator permissions to use this command.", ephemeral=True)
+        return
+    
+    guild_id = interaction.guild.id
+    if whitelist_collection.find_one({"guild_id": guild_id, "user_id": user.id}):
+        await interaction.response.send_message(f"{user.name} is already in the whitelist.", ephemeral=True)
+        return
+    
+    whitelist_collection.insert_one({"guild_id": guild_id, "user_id": user.id})
+    await interaction.response.send_message(f"{user.name} has been added to the whitelist.", ephemeral=True)
 
-        driver.get(f"https://discord.com/channels/{GUILD_ID}/{GUILD_ID}")
-        print(f"[DEBUG] Navigated to guild page: {GUILD_ID}")
+# Command to remove a user from the whitelist
+@bot.tree.command(name="removefromwhitelist", description="Remove a user from the whitelist.")
+async def remove_from_whitelist(interaction: discord.Interaction, user: discord.User):
+    if not await is_admin(interaction):
+        await interaction.response.send_message("You need administrator permissions to use this command.", ephemeral=True)
+        return
+    
+    guild_id = interaction.guild.id
+    if not whitelist_collection.find_one({"guild_id": guild_id, "user_id": user.id}):
+        await interaction.response.send_message(f"{user.name} is not in the whitelist.", ephemeral=True)
+        return
+    
+    whitelist_collection.delete_one({"guild_id": guild_id, "user_id": user.id})
+    await interaction.response.send_message(f"{user.name} has been removed from the whitelist.", ephemeral=True)
 
-        # Simulate an interaction with the page
-        while True:
-            try:
-                settings_button = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, "//*[@id='app-mount']/div[2]/div[1]/div[1]/div/div[2]/div/div/div/div/div[1]/nav/div[1]/header"))
-                )
-                settings_button.click()
+# Auto-kick alt accounts with the configured account age limit
+@bot.tree.command(name="autokickalt", description="Automatically kick accounts younger than the configured age limit.")
+async def autokickalt(interaction: discord.Interaction):
+    if not await is_admin(interaction):
+        await interaction.response.send_message("You need administrator permissions to use this command.", ephemeral=True)
+        return
 
-                guild_settings_button = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, "//*[@id='guild-header-popout-settings']"))
-                )
-                guild_settings_button.click()
+    guild_id = interaction.guild.id
+    guild_settings = guild_settings_collection.find_one({"guild_id": guild_id})
 
-                randomize_button = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, "//*[@id='app-mount']/div[2]/div[1]/div[4]/div/div[2]/div[2]/div[2]/div[1]/div[1]/button"))
-                )
-                randomize_button.click()
+    if guild_settings is None:
+        guild_settings_collection.insert_one({"guild_id": guild_id, "autokick_enabled": True})
+        guild_settings = {"autokick_enabled": True}
+    
+    class AutoKickSelect(Select):
+        def __init__(self):
+            options = [
+                discord.SelectOption(label="Enable Auto-Kick", value="enable"),
+                discord.SelectOption(label="Disable Auto-Kick", value="disable")
+            ]
+            super().__init__(placeholder="Select an option", min_values=1, max_values=1, options=options)
 
-                save_button = WebDriverWait(driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, "//*[@id='app-mount']/div[2]/div[1]/div[4]/div/div[2]/div[2]/div[2]/div[2]/div/div/div/div[2]/button[2]"))
-                )
-                save_button.click()
+        async def callback(self, interaction: discord.Interaction):
+            if not await is_admin(interaction):
+                await interaction.response.send_message("You need administrator permissions to use this option.", ephemeral=True)
+                return
 
-                time.sleep(10)
-            except (NoSuchElementException, TimeoutException) as e:
-                print(f"[ERROR] Element not found or timeout: {e}")
-                break
-            except Exception as e:
-                print(f"[ERROR] Unexpected error: {e}")
-                break
-    except WebDriverException as e:
-        print(f"[ERROR] WebDriverException encountered: {e}")
-        if attempt < retries - 1:
-            print("[INFO] Retrying after a delay...")
-            time.sleep(60)
-        else:
-            print("[ERROR] Max retries reached. Exiting.")
-    finally:
-        if driver:
-            print("[DEBUG] Quitting the WebDriver.")
-            driver.quit()
+            selected_option = self.values[0]
+            if selected_option == "enable":
+                if guild_settings["autokick_enabled"]:
+                    await interaction.response.send_message("Auto-kick is already enabled.", ephemeral=True)
+                else:
+                    guild_settings_collection.update_one({"guild_id": guild_id}, {"$set": {"autokick_enabled": True}})
+                    await interaction.response.send_message("Auto-kick has been enabled.", ephemeral=True)
+            elif selected_option == "disable":
+                if not guild_settings["autokick_enabled"]:
+                    await interaction.response.send_message("Auto-kick is already disabled.", ephemeral=True)
+                else:
+                    guild_settings_collection.update_one({"guild_id": guild_id}, {"$set": {"autokick_enabled": False}})
+                    await interaction.response.send_message("Auto-kick has been disabled.", ephemeral=True)
+
+    view = discord.ui.View()
+    view.add_item(AutoKickSelect())
+    await interaction.response.send_message("Select an option:", view=view, ephemeral=True)
+
+# Function to check and kick members under the configured account age limit, ignoring boosters
+async def process_members(guild):
+    guild_settings = guild_settings_collection.find_one({"guild_id": guild.id})
+    if guild_settings and guild_settings.get("autokick_enabled", False):
+        account_age_limit = guild_settings.get("account_age_limit", 7)  
+        for member in guild.members:
+            if member.premium_since is not None:
+                logging.info(f"Skipping {member.name} (ID: {member.id}) as they are a server booster.")
+                continue
+
+            if whitelist_collection.find_one({"guild_id": guild.id, "user_id": member.id}):
+                logging.info(f"Skipping {member.name} (ID: {member.id}) as they are whitelisted.")
+                continue
+            
+            account_age = datetime.now(timezone.utc) - member.created_at
+            logging.info(f"Checking user: {member.name} (ID: {member.id}) | Account created at: {member.created_at} | Account age: {account_age}")
+
+            if timedelta(days=0) <= account_age < timedelta(days=account_age_limit):
+                try:
+                    logging.info(f"User {member.name} (ID: {member.id}) has been kicked. Account age: {account_age}")
+                    await member.kick(reason=f"Account too new (under {account_age_limit} days)")
+                except discord.Forbidden:
+                    logging.error(f"Permission error: Could not kick {member.name} (ID: {member.id}).")
+                except discord.HTTPException as e:
+                    logging.error(f"HTTP error: {e}")
+                except Exception as e:
+                    logging.error(f"Error: {e}")
+
+# Background task to check members every 10 seconds
+@tasks.loop(seconds=10)
+async def auto_kick_task():
+    for guild in bot.guilds:
+        await process_members(guild)
+
+sync_commands()
+bot.run(DISCORD_TOKEN)
